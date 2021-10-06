@@ -158,39 +158,19 @@ class solver_class():
                         break
         """
         
-       
-
-        #rows, cols, squares, possible_answers = self.get_possible_answers(self.given_number)
-
-        """
-        # TODO: opt1 - using checker function for remaining values : works on EASY
-        for i in range(1, 10):
-            for j in range(1, 10):
-                for k in possible_answers[i-1][j-1]:  # what to write in the empty slot
-                    output = self.problem.checker(i, j, k)  # Try to input 'K' & This increases the number of attempts
-                    if output == 1:  # if the value is correct, checker will output 1. Otherwise, output is 0.
-                        self.puzzle[i-1][j-1]=k
-                        break
-        """
-        # TODO: opt2
+        # Repeatedly update possible answers for each square slot
         for i in range(9):
             for j in range(9):
-                rows, cols, squares, possible_answers = self.get_possible_answers(self.puzzle)
-                possible_answer = possible_answers[i][j]
-                for k in possible_answer:
-                    output = self.problem.checker(i+1, j+1, k)
-                    if output == 1:
-                        self.puzzle[i][j]=k
-                        break
-        """
-        success = self.recursive_backtracking(0)
-        if success:
-            for i in range(1, 10):
-                for j in range(1, 10):
-                    output = self.problem.checker(i, j, self.puzzle[i-1][j-1])  # Try to input 'K' & This increases the number of attempts
-                    if output != 0:
-                        print(f"error")
-        """
+                if self.given_number[i][j] == 0:
+                    # check only when the slot is originally empty
+                    _, _, _, possible_answers = self.get_possible_answers(self.puzzle)
+                    possible_answer = possible_answers[i][j]
+                    for k in possible_answer:
+                        output = self.problem.checker(i+1, j+1, k)
+                        if output == 1:
+                            self.puzzle[i][j]=k
+                            break
+        
     
 
 
@@ -209,18 +189,15 @@ class solver_class():
         squares = []
         for square_i in range(3):
             for square_j in range(3):
-                # given_number_list_{square/row/col} holds the existing values
                 given_number_rows = numbers[3*square_i : 3*(square_i+1)]
                 given_number_list_square = []
                 for row in given_number_rows:
                     given_number_list_square.extend(row[3*square_j : 3*(square_j+1)])
                 squares.append([e for e in given_number_list_square if e != 0])
         
-        #print(f"rows: {rows}")
-        #print(f"cols: {cols}")
-        #print(f"squares: {squares}")
-
+        
         # make a list of list of lists that hold possible answers
+        # i.e. sth that is not in its row / col / square
         possible_answers = []
         for i in range(9):
             possible_answer_row = []
@@ -238,39 +215,8 @@ class solver_class():
                             possible_answer.append(k)
                 possible_answer_row.append(possible_answer)
             possible_answers.append(possible_answer_row)
-        
-        #print(f"possible answers: {possible_answers}")
 
         return rows, cols, squares, possible_answers
-
-    
-
-
-    def recursive_backtracking(self, index):
-        if index == 80:
-            return True
-        
-        # if not finished
-        i = index // 9
-        j = index % 9
-        val = self.given_number[i][j]
-        if val != 0:
-            self.recursive_backtracking(index + 1)
-
-        rows, cols, squares, possible_answers = self.get_possible_answers(self.puzzle)
-        possible_answer = possible_answers[i][j]
-
-        for e in possible_answer:
-            self.puzzle[i][j] = e
-            is_finished = self.recursive_backtracking(index+1)
-            if is_finished:
-                return True
-            else:
-                self.puzzle[i][j] = 0
-        
-        return False
-
-
 
 
 
