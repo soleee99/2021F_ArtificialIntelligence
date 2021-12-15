@@ -7,9 +7,9 @@ class User:
         self.move = move
 
         self.q = {}
-        self.prob_random_action = 0.5
-        self.discount = 0.8
-        self.lr = 0.003
+        self.prob_random_action = 0.7
+        self.discount = 0.9
+        self.lr = 0.001
 
         self.weights = {'bias': 0.0, 'next-ghost': 0.0, 'next-eat': 0.0, 'closest-item': 0.0}
 
@@ -77,7 +77,6 @@ class User:
 
     def get_action(self, state):
         actions = self.get_legal_actions(state)
-        self.prob_random_action *= 0.7  # TODO:
         if len(actions) == 0:
             return None
         if random.random() < self.prob_random_action:
@@ -113,7 +112,7 @@ class User:
 
     def get_closest_item(self, state, y, x):
         if state[y][x] not in [BLANK, ITEM, POWER]:
-            return 0.0
+            return 10.0
         q = deque([(y, x, 1)])
         visit = set()
         while len(q) > 0:
@@ -125,13 +124,46 @@ class User:
             visit.add((y, x))
             if state[y - 1][x] in [BLANK, ITEM, POWER]:
                 q.append((y - 1, x, size + 1))
-            elif state[y][x - 1] in [BLANK, ITEM, POWER]:
+            if state[y][x - 1] in [BLANK, ITEM, POWER]:
                 q.append((y, x - 1, size + 1))
-            elif state[y][x + 1] in [BLANK, ITEM, POWER]:
+            if state[y][x + 1] in [BLANK, ITEM, POWER]:
                 q.append((y, x + 1, size + 1))
-            elif state[y + 1][x] in [BLANK, ITEM, POWER]:
+            if state[y + 1][x] in [BLANK, ITEM, POWER]:
                 q.append((y + 1, x, size + 1))
-        return 0.0
+        return 10.0
+
+    """
+    def get_moveup(self, state, y, next_y):
+        above = state[:y][:]
+        below = state[y+1:][:]
+
+        above_num = 0
+        below_num = 0
+        for i in range(len(above)):
+            for item in above[i]:
+                if item in [ITEM, POWER]:
+                    above_num += 1
+        for i in range(len(below)):
+            for item in below[i]:
+                if item in [ITEM, POWER]:
+                    below_num += 1
+        
+        cluster_diff = above_num - below_num
+        y_diff = y - next_y
+
+        if cluster_diff * y_diff > 0:
+            return 1
+        else:
+            return -1
+    """
+
+    def is_nearby(self, state, y, x, obj):
+        grid = state[y-1:y+2][x-1:x+2]
+        for l in grid:
+            for item in l:
+                if item is obj:
+                    return True
+        return False
 
     def get_features(self, state, action):
         y, x = self.y, self.x
@@ -148,25 +180,35 @@ class User:
         else:
             next_y, next_x = y + 1, x
 
+        is_power = False
+        if state[next_y][next_x] == POWER:
+            is_power = True
+
         features = {'bias': 1.0}
+
         features['next-ghost'] = 0.0
         if state[next_y][next_x] == GHOST:
-            features['next-ghost'] += 1.0
+            features['next-ghost'] += 12.0
+
         if next_y > 0 and state[next_y - 1][next_x] == GHOST:
-            features['next-ghost'] += 1.0
+            features['next-ghost'] += 12.0
         if next_x > 0 and state[next_y][next_x - 1] == GHOST:
-            features['next-ghost'] += 1.0
+            features['next-ghost'] += 12.0
         if next_x < len(state[0]) - 1 and state[next_y][next_x + 1] == GHOST:
-            features['next-ghost'] += 1.0
+            features['next-ghost'] += 12.0
         if next_y < len(state) - 1 and state[next_y + 1][next_x] == GHOST:
-            features['next-ghost'] += 1.0
+            features['next-ghost'] += 12.0
+      
 
         features['next-eat'] = 0.0
         if state[next_y][next_x] in [ITEM, POWER]:
-            features['next-eat'] = 1.0
+            features['next-eat'] = 5.0
 
-        features['closest-item'] = self.get_closest_item(state, next_y, next_x)
+        size = self.get_closest_item(state, next_y, next_x)
+        #print(f"action: {action}, size: {size}")
+        features['closest-item'] = size
 
+        #features['y_cluster'] = self.get_moveup(state, y, next_y)
         return features
 
     def get_q_v3(self, state, action):
@@ -193,7 +235,7 @@ class User:
         return random.choice(max_actions)
 
     def get_action_v3(self, state):
-        self.prob_random_action *= 0.9
+        self.prob_random_action *= 0.9  # TODO:
         actions = self.get_legal_actions(state)
         if len(actions) == 0:
             return None
