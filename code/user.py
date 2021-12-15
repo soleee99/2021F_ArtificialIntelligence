@@ -7,7 +7,7 @@ class User:
         self.move = move
 
         self.q = {}
-        self.prob_random_action = 0.05
+        self.prob_random_action = 0.5
         self.discount = 0.8
         self.lr = 0.003
 
@@ -77,6 +77,7 @@ class User:
 
     def get_action(self, state):
         actions = self.get_legal_actions(state)
+        self.prob_random_action *= 0.7  # TODO:
         if len(actions) == 0:
             return None
         if random.random() < self.prob_random_action:
