@@ -160,9 +160,11 @@ class User:
             features['next-ghost'] += 1.0
         if next_y < len(state) - 1 and state[next_y + 1][next_x] == GHOST:
             features['next-ghost'] += 1.0
+
         features['next-eat'] = 0.0
         if state[next_y][next_x] in [ITEM, POWER]:
             features['next-eat'] = 1.0
+
         features['closest-item'] = self.get_closest_item(state, next_y, next_x)
 
         return features
@@ -191,6 +193,7 @@ class User:
         return random.choice(max_actions)
 
     def get_action_v3(self, state):
+        self.prob_random_action *= 0.9
         actions = self.get_legal_actions(state)
         if len(actions) == 0:
             return None
