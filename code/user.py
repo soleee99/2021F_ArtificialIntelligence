@@ -7,11 +7,11 @@ class User:
         self.move = move
 
         self.q = {}
-        self.prob_random_action = 0.7
+        self.prob_random_action = 0.8
         self.discount = 0.9
         self.lr = 0.001
 
-        self.weights = {'bias': 0.0, 'next-ghost': 0.0, 'next-eat': 0.0, 'closest-item': 0.0}
+        self.weights = {'bias': 0.0, 'next-ghost': 0.0, 'next-eat': 0.0, 'closest-item': 0.0, 'closest-ghost':0.0, 'closest-power':0.0}
 
     def next_pos(self, state, test=False):
         if self.move == 'v1':
@@ -112,7 +112,7 @@ class User:
 
     def get_closest_item(self, state, y, x):
         if state[y][x] not in [BLANK, ITEM, POWER]:
-            return 10.0
+            return 15.0
         q = deque([(y, x, 1)])
         visit = set()
         while len(q) > 0:
@@ -130,7 +130,54 @@ class User:
                 q.append((y, x + 1, size + 1))
             if state[y + 1][x] in [BLANK, ITEM, POWER]:
                 q.append((y + 1, x, size + 1))
-        return 10.0
+        return 15.0
+
+
+    def get_closest_ghost(self, state, y, x):
+        if state[y][x] not in [BLANK, ITEM, POWER, GHOST]:
+            return 20.0
+        q = deque([(y, x, 1)])
+        visit = set()
+        while len(q) > 0:
+            y, x, size = q.popleft()
+            if state[y][x] in [GHOST]:
+                # if this y, x is a ghost
+                return size
+            if (y, x) in visit:
+                continue
+            visit.add((y, x))
+            if state[y - 1][x] not in [WALL]:
+                q.append((y - 1, x, size + 1))
+            if state[y][x - 1] not in [WALL]:
+                q.append((y, x - 1, size + 1))
+            if state[y][x + 1] not in [WALL]:
+                q.append((y, x + 1, size + 1))
+            if state[y + 1][x] not in [WALL]:
+                q.append((y + 1, x, size + 1))
+        return 20.0
+
+    def get_closest_power(self, state, y, x):
+        if state[y][x] not in [BLANK, ITEM, POWER]:
+            return 20.0
+        q = deque([(y, x, 1)])
+        visit = set()
+        while len(q) > 0:
+            y, x, size = q.popleft()
+            if state[y][x] in [POWER]:
+                return size
+            if (y, x) in visit:
+                continue
+            visit.add((y, x))
+            if state[y - 1][x] in [BLANK, ITEM, POWER]:
+                q.append((y - 1, x, size + 1))
+            if state[y][x - 1] in [BLANK, ITEM, POWER]:
+                q.append((y, x - 1, size + 1))
+            if state[y][x + 1] in [BLANK, ITEM, POWER]:
+                q.append((y, x + 1, size + 1))
+            if state[y + 1][x] in [BLANK, ITEM, POWER]:
+                q.append((y + 1, x, size + 1))
+        return 20.0
+
 
     """
     def get_moveup(self, state, y, next_y):
@@ -207,6 +254,18 @@ class User:
         size = self.get_closest_item(state, next_y, next_x)
         #print(f"action: {action}, size: {size}")
         features['closest-item'] = size
+
+        size = self.get_closest_ghost(state, next_y, next_x)
+        if state[y][x] in [PUSER]:
+            # if PUSER, go towards ghost
+            features['closest-ghost'] = 2 / size
+        else:
+            features['closest-ghost'] = size*0.5
+
+        if size <= 4:
+            features['closest-power'] = self.get_closest_power(state, next_y, next_x)
+        else:
+            features['closest-power'] = 20.0    # when going to power isn't necessaraily crucial
 
         #features['y_cluster'] = self.get_moveup(state, y, next_y)
         return features

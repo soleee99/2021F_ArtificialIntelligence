@@ -3,7 +3,7 @@ import random
 random.seed(905)
 user = User(move='v3')
 
-level = 1
+level = 2
 world = World(user=user, level=level)
 
 # train

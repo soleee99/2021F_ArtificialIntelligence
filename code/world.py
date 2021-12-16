@@ -233,6 +233,7 @@ class World:
         else:
             action = 3
         if done:
+            #print("eaten")
             self.total_score += SCORE_DEAD
             self.user.update(before_board, action, self.board, SCORE_DEAD)
             return True
@@ -241,6 +242,7 @@ class World:
             self.user.update(before_board, action, self.board, SCORE_ALIVE)
             return True
         if self.total_time > self.max_y * self.max_x * 10:
+            #print("timeout")
             self.total_score += SCORE_DEAD
             self.user.update(before_board, action, self.board, SCORE_DEAD)
             return True
