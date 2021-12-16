@@ -3,7 +3,7 @@ import random
 random.seed(905)
 user = User(move='v3')
 
-level = 2
+level = 3
 world = World(user=user, level=level)
 TEST_STEP = 101
 # train
