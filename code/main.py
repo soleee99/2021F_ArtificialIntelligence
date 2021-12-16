@@ -5,7 +5,7 @@ user = User(move='v3')
 
 level = 2
 world = World(user=user, level=level)
-
+TEST_STEP = 101
 # train
 score_list = []
 for episode in range(TOTAL_EPISODE):

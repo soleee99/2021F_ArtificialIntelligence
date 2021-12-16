@@ -1,5 +1,5 @@
 from util import *
-
+is_test = False
 class User:
     def __init__(self, y=0, x=0, move='v1'):
         self.y = y
@@ -11,7 +11,7 @@ class User:
         self.discount = 0.9
         self.lr = 0.001
 
-        self.weights = {'bias': 0.0, 'next-ghost': 0.0, 'next-eat': 0.0, 'closest-item': 0.0, 'closest-ghost':0.0, 'closest-power':0.0}
+        self.weights = {'bias': 0.0, 'next-ghost': 0.0, 'next-eat': 0.0, 'closest-item': 0.0, 'closest-ghost':0.0}
 
     def next_pos(self, state, test=False):
         if self.move == 'v1':
@@ -177,32 +177,7 @@ class User:
             if state[y + 1][x] in [BLANK, ITEM, POWER]:
                 q.append((y + 1, x, size + 1))
         return 20.0
-
-
-    """
-    def get_moveup(self, state, y, next_y):
-        above = state[:y][:]
-        below = state[y+1:][:]
-
-        above_num = 0
-        below_num = 0
-        for i in range(len(above)):
-            for item in above[i]:
-                if item in [ITEM, POWER]:
-                    above_num += 1
-        for i in range(len(below)):
-            for item in below[i]:
-                if item in [ITEM, POWER]:
-                    below_num += 1
-        
-        cluster_diff = above_num - below_num
-        y_diff = y - next_y
-
-        if cluster_diff * y_diff > 0:
-            return 1
-        else:
-            return -1
-    """
+ 
 
     def is_nearby(self, state, y, x, obj):
         grid = state[y-1:y+2][x-1:x+2]
@@ -235,38 +210,59 @@ class User:
 
         features['next-ghost'] = 0.0
         if state[next_y][next_x] == GHOST:
-            features['next-ghost'] += 12.0
+            features['next-ghost'] += 3.0
 
         if next_y > 0 and state[next_y - 1][next_x] == GHOST:
-            features['next-ghost'] += 12.0
+            features['next-ghost'] += 3.0
         if next_x > 0 and state[next_y][next_x - 1] == GHOST:
-            features['next-ghost'] += 12.0
+            features['next-ghost'] += 3.0
         if next_x < len(state[0]) - 1 and state[next_y][next_x + 1] == GHOST:
-            features['next-ghost'] += 12.0
+            features['next-ghost'] += 3.0
         if next_y < len(state) - 1 and state[next_y + 1][next_x] == GHOST:
-            features['next-ghost'] += 12.0
+            features['next-ghost'] += 3.0
       
 
         features['next-eat'] = 0.0
         if state[next_y][next_x] in [ITEM, POWER]:
-            features['next-eat'] = 5.0
+            features['next-eat'] = 2.0
+        if next_y > 0 and state[next_y - 1][next_x] in [ITEM, POWER]:
+            features['next-eat'] += 2.0
+        if next_x > 0 and state[next_y][next_x - 1] in [ITEM, POWER]:
+            features['next-eat'] += 2.0
+        if next_x < len(state[0]) - 1 and state[next_y][next_x + 1] in [ITEM, POWER]:
+            features['next-eat'] += 2.0
+        if next_y < len(state) - 1 and state[next_y + 1][next_x] in [ITEM, POWER]:
+            features['next-eat'] += 2.0
 
         size = self.get_closest_item(state, next_y, next_x)
         #print(f"action: {action}, size: {size}")
-        features['closest-item'] = size
+        features['closest-item'] = size 
 
         size = self.get_closest_ghost(state, next_y, next_x)
+        """
         if state[y][x] in [PUSER]:
             # if PUSER, go towards ghost
             features['closest-ghost'] = 2 / size
         else:
-            features['closest-ghost'] = size*0.5
+        """
+        features['closest-ghost'] = size*0.3
+        
 
+        """
         if size <= 4:
-            features['closest-power'] = self.get_closest_power(state, next_y, next_x)
+            features['closest-item'] -= 5.0/closest_pow
+        """
+        if size <= 4:
+            closest_pow = self.get_closest_power(state, next_y, next_x)
+            if is_test:
+                print(f"\t\tclosest pow: {closest_pow}")
+            features['closest-item'] -= 10.0/closest_pow
+        #else:
+        #    features['closest-pow'] = 0.0
+        """
         else:
             features['closest-power'] = 20.0    # when going to power isn't necessaraily crucial
-
+        """
         #features['y_cluster'] = self.get_moveup(state, y, next_y)
         return features
 
@@ -275,6 +271,8 @@ class User:
         features = self.get_features(state, action)
         for key in features:
             ret += features[key] * self.weights[key]
+        if is_test:
+            print(f"\taction: {action}, qval: {ret}\n\t\tfeatures: {features}\n\t\tweights: {self.weights}\n")
         return ret
 
     def get_v_v3(self, state):
@@ -286,12 +284,31 @@ class User:
 
     def get_action_from_q_v3(self, state):
         actions = self.get_legal_actions(state)
+        qval_action = []
+        for a in actions:
+            qval = self.get_q_v3(state, a)
+            qval_action.append((qval, a))
+        
+        sorted_qval_action = sorted(qval_action, key=lambda tup: tup[0], reverse=True)
+        
+        max_qval = sorted_qval_action[0][0]
+        possible_action = [sorted_qval_action[0][1]]
+
+        for item in sorted_qval_action:
+            if item[0] == max_qval:
+                possible_action.append(item[1])
+            else:
+                break
+                
+        return random.choice(possible_action)
+        """
         if len(actions) == 0:
             return None
         max_action = max(actions, key=lambda a: self.get_q_v3(state, a))
         q_val = self.get_q_v3(state, max_action)
         max_actions = [a for a in actions if self.get_q_v3(state, a) == q_val]
         return random.choice(max_actions)
+        """
 
     def get_action_v3(self, state):
         self.prob_random_action *= 0.9  # TODO:
@@ -312,9 +329,12 @@ class User:
         self.weights = copy.deepcopy(weights)
 
     def next_pos_v3(self, state, test=False):
+        global is_test
         if test:
+            is_test = True
             action = self.get_action_from_q_v3(state)
         else:
+            is_test = False
             action = self.get_action_v3(state)
         if action == 0:
             next_pos = (self.y - 1, self.x)

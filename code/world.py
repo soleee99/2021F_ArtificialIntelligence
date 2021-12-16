@@ -246,7 +246,8 @@ class World:
             self.total_score += SCORE_DEAD
             self.user.update(before_board, action, self.board, SCORE_DEAD)
             return True
-        self.user.update(before_board, action, self.board, next_score - score)
+        if not test:
+            self.user.update(before_board, action, self.board, next_score - score)
         if self.powered > 0:
             self.powered -= 1
         self.total_time += 1
