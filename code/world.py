@@ -246,6 +246,7 @@ class World:
             self.total_score += SCORE_DEAD
             self.user.update(before_board, action, self.board, SCORE_DEAD)
             return True
+        # I changed the part below so that update was done only in non-testing cases.
         if not test:
             self.user.update(before_board, action, self.board, next_score - score)
         if self.powered > 0:

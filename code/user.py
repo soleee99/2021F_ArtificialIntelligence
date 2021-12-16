@@ -1,5 +1,5 @@
 from util import *
-is_test = False
+
 class User:
     def __init__(self, y=0, x=0, move='v1'):
         self.y = y
@@ -7,9 +7,9 @@ class User:
         self.move = move
 
         self.q = {}
-        self.prob_random_action = 0.8
+        self.prob_random_action = 0.8   # empirically changed
         self.discount = 0.9
-        self.lr = 0.001
+        self.lr = 0.001                 # empirically changed
 
         self.weights = {'bias': 0.0, 'next-ghost': 0.0, 'next-eat': 0.0, 'closest-item': 0.0, 'closest-ghost':0.0}
 
@@ -111,6 +111,8 @@ class User:
         return next_pos
 
     def get_closest_item(self, state, y, x):
+        # I changed the if-else statements to all if statements because
+        # the original code only checked in the upper direction first
         if state[y][x] not in [BLANK, ITEM, POWER]:
             return 15.0
         q = deque([(y, x, 1)])
@@ -141,7 +143,6 @@ class User:
         while len(q) > 0:
             y, x, size = q.popleft()
             if state[y][x] in [GHOST]:
-                # if this y, x is a ghost
                 return size
             if (y, x) in visit:
                 continue
@@ -155,6 +156,7 @@ class User:
             if state[y + 1][x] not in [WALL]:
                 q.append((y + 1, x, size + 1))
         return 20.0
+
 
     def get_closest_power(self, state, y, x):
         if state[y][x] not in [BLANK, ITEM, POWER]:
@@ -221,7 +223,7 @@ class User:
         if next_y < len(state) - 1 and state[next_y + 1][next_x] == GHOST:
             features['next-ghost'] += 3.0
       
-
+        # I added next-eat for nearby grids like next-ghost
         features['next-eat'] = 0.0
         if state[next_y][next_x] in [ITEM, POWER]:
             features['next-eat'] = 2.0
@@ -234,35 +236,18 @@ class User:
         if next_y < len(state) - 1 and state[next_y + 1][next_x] in [ITEM, POWER]:
             features['next-eat'] += 2.0
 
-        size = self.get_closest_item(state, next_y, next_x)
-        #print(f"action: {action}, size: {size}")
-        features['closest-item'] = size 
+        features['closest-item'] = self.get_closest_item(state, next_y, next_x)
 
-        size = self.get_closest_ghost(state, next_y, next_x)
-        """
-        if state[y][x] in [PUSER]:
-            # if PUSER, go towards ghost
-            features['closest-ghost'] = 2 / size
-        else:
-        """
-        features['closest-ghost'] = size*0.3
+        # returns the distance to the closest ghost. multiplied 0.3 because of scaling
+        dist_ghost = self.get_closest_ghost(state, next_y, next_x)
+        features['closest-ghost'] = dist_ghost*0.3
         
-
-        """
-        if size <= 4:
-            features['closest-item'] -= 5.0/closest_pow
-        """
-        if size <= 4:
+        if dist_ghost <= 4:
+            # if ghost is following, want the user to go to POWER
+            # changed the original feature 'closest-item'
             closest_pow = self.get_closest_power(state, next_y, next_x)
-            
             features['closest-item'] -= 10.0/closest_pow
-        #else:
-        #    features['closest-pow'] = 0.0
-        """
-        else:
-            features['closest-power'] = 20.0    # when going to power isn't necessaraily crucial
-        """
-        #features['y_cluster'] = self.get_moveup(state, y, next_y)
+        
         return features
 
     def get_q_v3(self, state, action):
@@ -270,8 +255,6 @@ class User:
         features = self.get_features(state, action)
         for key in features:
             ret += features[key] * self.weights[key]
-        #if is_test:
-        #    print(f"\taction: {action}, qval: {ret}\n\t\tfeatures: {features}\n\t\tweights: {self.weights}\n")
         return ret
 
     def get_v_v3(self, state):
@@ -282,6 +265,8 @@ class User:
         return self.get_q_v3(state, max_action)
 
     def get_action_from_q_v3(self, state):
+        # in this part, I modified the original code because the original code
+        # was making too many unnecesary calls of self.get_q_v3
         actions = self.get_legal_actions(state)
         qval_action = []
         for a in actions:
@@ -300,6 +285,7 @@ class User:
                 break
                 
         return random.choice(possible_action)
+
         """
         if len(actions) == 0:
             return None
@@ -310,7 +296,8 @@ class User:
         """
 
     def get_action_v3(self, state):
-        self.prob_random_action *= 0.9  # TODO:
+        # decay the probability of random action 
+        self.prob_random_action *= 0.9  
         actions = self.get_legal_actions(state)
         if len(actions) == 0:
             return None
@@ -328,12 +315,9 @@ class User:
         self.weights = copy.deepcopy(weights)
 
     def next_pos_v3(self, state, test=False):
-        global is_test
         if test:
-            is_test = True
             action = self.get_action_from_q_v3(state)
         else:
-            is_test = False
             action = self.get_action_v3(state)
         if action == 0:
             next_pos = (self.y - 1, self.x)

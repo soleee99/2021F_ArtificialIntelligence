@@ -1,9 +1,11 @@
 from world import *
+
 import random
 random.seed(100)
+
 user = User(move='v3')
 
-level = 4
+level = 0
 world = World(user=user, level=level)
 
 # train
