@@ -254,8 +254,7 @@ class User:
         """
         if size <= 4:
             closest_pow = self.get_closest_power(state, next_y, next_x)
-            if is_test:
-                print(f"\t\tclosest pow: {closest_pow}")
+            
             features['closest-item'] -= 10.0/closest_pow
         #else:
         #    features['closest-pow'] = 0.0
@@ -271,8 +270,8 @@ class User:
         features = self.get_features(state, action)
         for key in features:
             ret += features[key] * self.weights[key]
-        if is_test:
-            print(f"\taction: {action}, qval: {ret}\n\t\tfeatures: {features}\n\t\tweights: {self.weights}\n")
+        #if is_test:
+        #    print(f"\taction: {action}, qval: {ret}\n\t\tfeatures: {features}\n\t\tweights: {self.weights}\n")
         return ret
 
     def get_v_v3(self, state):

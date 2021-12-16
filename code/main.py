@@ -1,11 +1,11 @@
 from world import *
 import random
-random.seed(900)
+random.seed(100)
 user = User(move='v3')
 
-level = 0
+level = 4
 world = World(user=user, level=level)
-TEST_STEP = 101
+
 # train
 score_list = []
 for episode in range(TOTAL_EPISODE):
